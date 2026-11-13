@@ -1,0 +1,20 @@
+{
+  "name": "deployacron",
+  "version": "0.2.0",
+  "description": "All-purpose deployer you run in a browser: fetches a project's code onto one or more servers over SSH, runs its scripts there, streams every side live, and keeps every run.",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test/committed-config.mjs && node test/tmux-errors.mjs && node test/mouse-modes.mjs && node test/remote-paths.mjs && node test/targets.mjs"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "express": "^5.1.0",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>deployacron</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f766e'/><path d='M9 22 16 8l7 14' stroke='white' stroke-width='3' fill='none' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/vendor/xterm/css/xterm.css">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#deploy">
+    <span class="mark">▲</span>
+    <span class="name">deployacron</span>
+  </a>
+  <nav class="tabs">
+    <a href="#remote" data-tab="remote">Remote</a>
+    <a href="#deploy" data-tab="deploy">Deploy</a>
+    <a href="#runs" data-tab="runs">Runs</a>
+    <a href="#troubleshoot" data-tab="troubleshoot">Troubleshoot</a>
+    <a href="#settings" data-tab="settings">Settings</a>
+  </nav>
+  <select class="project" id="project" title="project"></select>
+  <select class="project" id="target-sel" title="target — the server the Remote, Troubleshoot and Server pages are about" hidden></select>
+  <div class="target" id="target">—</div>
+  <div class="conn" id="conn" title="live connection">●</div>
+</header>
+
+<main id="view"></main>
+
+<template id="tpl-feed">
+  <section class="feed card">
+    <header>
+      <div class="feed-title"><span class="dot"></span><span class="label"></span><span class="sub"></span></div>
+      <div class="pager">
+        <button class="pg first" title="first page">«</button>
+        <button class="pg prev" title="previous page">‹</button>
+        <span class="pos">0 / 0</span>
+        <button class="pg next" title="next page">›</button>
+        <button class="pg last" title="last page">»</button>
+        <button class="live on" title="follow the latest page">Live</button>
+      </div>
+    </header>
+    <pre class="screen"></pre>
+    <footer><span class="count"></span><span class="hint"></span></footer>
+  </section>
+</template>
+
+<script src="/vendor/xterm/lib/xterm.js"></script>
+<script src="/vendor/addon-fit/lib/addon-fit.js"></script>
+<script src="/ansi.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

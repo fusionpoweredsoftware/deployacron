@@ -1,0 +1,71 @@
+{
+  "title": "New project",
+  "description": "Push a directory to a server and run scripts there. Edit everything under Settings.",
+  "variables": {
+    "app.name": "myapp",
+    "app.port": "3000",
+    "git.token": ""
+  },
+  "secrets": [
+    "git.token"
+  ],
+  "env": {
+    "APP_NAME": "{{app.name}}",
+    "APP_PORT": "{{app.port}}"
+  },
+  "push": {
+    "excludes": "rsync-excludes.txt",
+    "delete": true
+  },
+  "templates": [
+    "NOT-DONE.md"
+  ],
+  "steps": [
+    {
+      "id": "preflight",
+      "title": "Preflight",
+      "kind": "preflight",
+      "side": "remote",
+      "run": "preflight.sh"
+    },
+    {
+      "id": "fetch",
+      "title": "Fetch code",
+      "kind": "fetch",
+      "side": "remote"
+    },
+    {
+      "id": "install",
+      "title": "Install & start",
+      "kind": "script",
+      "side": "remote",
+      "run": "install.sh"
+    },
+    {
+      "id": "verify",
+      "title": "Verify",
+      "kind": "command",
+      "side": "remote",
+      "run": "curl -fsS --max-time 4 http://127.0.0.1:{{app.port}}/ >/dev/null && echo up || echo 'not answering'",
+      "always": true
+    },
+    {
+      "id": "report",
+      "title": "What is not done",
+      "kind": "report",
+      "side": "local",
+      "always": true
+    }
+  ],
+  "troubleshoot": {
+    "command": "ollama launch claude",
+    "tmuxSession": ""
+  },
+  "git": {
+    "url": "",
+    "branch": "main",
+    "keyPath": "",
+    "depth": 0,
+    "submodules": false
+  }
+}

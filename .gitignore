@@ -1,0 +1,10 @@
+node_modules/
+# The active project, port, runs to keep.
+config.json
+# Each project's server, credentials, source path and secret values — this machine's only.
+projects/*/local.json
+# Every run's logs and metadata.
+runs/
+# The local troubleshooter's context files and tmux logs.
+.deploy/
+.DS_Store
