@@ -1,0 +1,7 @@
+# What the push leaves out. Anything here is also protected from --delete.
+.git/
+node_modules/
+.DS_Store
+*.log
+.env
+/.deploy/
