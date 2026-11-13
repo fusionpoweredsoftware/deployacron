@@ -15,7 +15,7 @@ PDNS_API_KEY=$PDNS_API_KEY
 MANAGE_PATH=$MANAGE_PATH
 ZAI_API_KEY=${ZAI_APIKEY:-}
 ZAI_MODEL=${ZAI_MODEL:-glm-5.3-flash}
-ZAI_URL=${ZAI_URL:-https://api.z.ai/api/coding/paas/v4/chat/completions}
+ZAI_URL=${ZAI_URL:-https://api.z.ai/api/anthropic}
 ORIGIN_PORT=$ORIGIN_PORT
 ENV
 docker compose up -d --build 2>&1 | tail -n 5
