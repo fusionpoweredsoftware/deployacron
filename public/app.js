@@ -99,7 +99,14 @@ function connect() {
     if (m.type === 'started') { state.current = m.run; const s = runStore(m.run); s.meta = m.meta; s.loaded = true; onRunChange(); if (route().name === 'deploy') showDeploy(); }
     else if (m.type === 'log') { const s = runStore(m.run); if (s.loaded) ingest(s, m); }
     else if (m.type === 'step') { const s = runStore(m.run); if (s.meta) { const i = s.meta.steps.findIndex((x) => x.id === m.step.id); if (i >= 0) s.meta.steps[i] = m.step; for (const fn of s.listeners) fn('step'); } }
-    else if (m.type === 'done') { const s = runStore(m.run); state.current = null; api(`/api/runs/${m.run}`).then((meta) => { s.meta = meta; for (const fn of s.listeners) fn('done'); }); onRunChange(); }
+    else if (m.type === 'done') {
+      // Re-read the whole run from disk: a short run can finish before the page
+      // has caught up with its live events, and the file has every line.
+      const s = runStore(m.run); state.current = null;
+      Object.assign(s, { lines: { local: [], remote: [] }, partial: { local: '', remote: '' }, loaded: false });
+      loadRun(m.run).then(() => { for (const fn of s.listeners) { fn('local'); fn('remote'); fn('done'); } }).catch(() => {});
+      onRunChange();
+    }
   };
 }
 function send(msg) { if (state.ws?.readyState === 1) state.ws.send(JSON.stringify(msg)); }

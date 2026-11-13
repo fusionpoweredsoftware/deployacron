@@ -126,12 +126,12 @@ function startRun(p, steps, kind) {
   run.on('step', (ev) => broadcast({ type: 'step', project: p.name, ...ev }));
   run.on('done', async (meta) => {
     current.delete(p.name);
+    broadcast({ type: 'done', project: p.name, run: run.id, status: meta.status });
     // The troubleshooters get this run's feeds without anyone pressing anything:
     // the local one, and the one on every target a step ran on.
     const used = [...new Set(steps.filter((x) => x.side === 'remote').map((x) => x.target))];
     try { await pushContext(p, 'local'); } catch (e) { console.error('[context local]', e.message); }
     for (const t of used) { try { await pushContext(bindTarget(p, t), 'remote'); } catch (e) { console.error(`[context ${t}]`, e.message); } }
-    broadcast({ type: 'done', project: p.name, run: run.id, status: meta.status });
     prune(p.name, loadApp().keepRuns);
   });
   broadcast({ type: 'started', project: p.name, run: run.id, meta: run.meta });
