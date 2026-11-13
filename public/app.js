@@ -89,7 +89,13 @@ async function loadRun(id) {
 function connect() {
   const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
   state.ws = ws;
-  ws.onopen = () => $('#conn').classList.add('on');
+  ws.onopen = () => {
+    $('#conn').classList.add('on');
+    // Back after a drop: whatever was logged meanwhile never arrived, so re-read open runs from disk.
+    if (state.wasConnected) for (const s of state.runs.values()) if (s.meta?.status === 'running') Object.assign(s, { lines: { local: [], remote: [] }, partial: { local: '', remote: '' }, loaded: false });
+    if (state.wasConnected && route().name === 'deploy') showDeploy();
+    state.wasConnected = true;
+  };
   ws.onclose = () => { $('#conn').classList.remove('on'); setTimeout(connect, 1500); };
   ws.onmessage = (e) => {
     const m = JSON.parse(e.data);
@@ -346,8 +352,12 @@ window.addEventListener('hashchange', render);
 
 // ── Deploy / Run ───────────────────────────────────────────────────────────
 async function showDeploy(runId) {
+  // Starting a run calls this twice (the button, and the socket's "started"):
+  // only the newest call may build the page, or the older one wires its feeds
+  // to elements the newer one has already replaced.
+  const gen = (state.deployGen = (state.deployGen || 0) + 1);
   let id = runId || state.current;
-  if (!id) { const l = await api('/api/runs?size=1'); id = l.current || l.runs[0]?.id; state.current = l.current; }
+  if (!id) { const l = await api('/api/runs?size=1'); if (gen !== state.deployGen) return; id = l.current || l.runs[0]?.id; state.current = l.current; }
   const problems = state.problems;
   view.innerHTML = `
     <div class="grid fill">
@@ -384,6 +394,7 @@ async function showDeploy(runId) {
     return;
   }
   const store = await loadRun(id);
+  if (gen !== state.deployGen) return;
   const feeds = [
     makeFeed({ pane: 'local', label: 'Local', sub: 'this machine, pushing', getLines: () => store.lines.local, hint: 'rsync + ssh from here' }),
     makeFeed({ pane: 'remote', label: 'Remote', sub: targetText(), getLines: () => store.lines.remote, hint: 'what the server prints' }),
