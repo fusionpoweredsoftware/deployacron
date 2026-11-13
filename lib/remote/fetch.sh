@@ -8,7 +8,9 @@
 #
 #   GIT_URL        the remote, ssh or https
 #   GIT_BRANCH     the branch to deploy
-#   GIT_KEY        path to a deploy key ON THIS SERVER (optional)
+#   GIT_KEY        path to a deploy key ON THIS SERVER (optional; when empty and
+#                  the server cannot read an ssh remote, one is made at
+#                  ~/.ssh/deploy-$PROJECT and the run asks for it to be added)
 #   GIT_TOKEN      token for an https remote (optional; never written to disk)
 #   GIT_DEPTH      shallow clone depth, 0 or empty for a full clone
 #   GIT_SUBMODULES 1 to update submodules too
@@ -30,6 +32,13 @@ set -euo pipefail
 expand_home() { case "${1:-}" in "~") printf '%s' "$HOME" ;; "~/"*) printf '%s/%s' "$HOME" "${1#\~/}" ;; *) printf '%s' "${1:-}" ;; esac; }
 GIT_KEY="$(expand_home "${GIT_KEY:-}")"
 REMOTE_DIR="$(expand_home "$REMOTE_DIR")"
+
+# No key set, no token, an ssh remote: this server's own key for this project,
+# made on demand. A key set in Settings always wins and is never second-guessed.
+AUTO_KEY="$HOME/.ssh/deploy-${PROJECT:-deploy}"
+AUTO=""
+case "$GIT_URL" in git@*|ssh://*) [ -z "$GIT_KEY" ] && [ -z "${GIT_TOKEN:-}" ] && AUTO=1 ;; esac
+[ -n "$AUTO" ] && [ -r "$AUTO_KEY" ] && GIT_KEY="$AUTO_KEY"
 
 section "Fetch ${GIT_BRANCH} from ${GIT_URL}"
 have git || fail "git is not installed on this server"
@@ -55,6 +64,24 @@ if [ -n "${GIT_TOKEN:-}" ]; then
   info "authenticating with a token"
 fi
 export GIT_CONFIG_PARAMETERS="'color.ui=always'"
+
+if [ -n "$AUTO" ]; then
+  ERRF="$(mktemp)"
+  if ! git ls-remote --heads "$GIT_URL" "$GIT_BRANCH" >/dev/null 2>"$ERRF"; then
+    if grep -qiE 'permission denied|could not read from remote|repository not found' "$ERRF"; then
+      if [ ! -r "$AUTO_KEY" ]; then
+        have ssh-keygen || fail "this server cannot read the repository, and has no ssh-keygen to make a deploy key — set one in Settings"
+        mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+        ssh-keygen -q -t ed25519 -N "" -C "deployacron ${PROJECT:-deploy}@$(hostname)" -f "$AUTO_KEY"
+        success "made a deploy key for this server: ${BOLD}${AUTO_KEY}${RESET}"
+      fi
+      warn "this server cannot read ${GIT_URL} yet — add its key to the repository"
+      printf '::deployacron-key:: %s %s\n' "$AUTO_KEY" "$(cat "$AUTO_KEY.pub")"
+      rm -f "$ERRF"; exit 75
+    fi
+  fi
+  rm -f "$ERRF"
+fi
 
 DEPTH_ARGS=()
 [ -n "${GIT_DEPTH:-}" ] && [ "${GIT_DEPTH:-0}" != "0" ] && DEPTH_ARGS=(--depth "$GIT_DEPTH")
