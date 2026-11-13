@@ -3,7 +3,8 @@ set -euo pipefail
 . "$(dirname "$0")/_lib.sh"
 cd "$REMOTE_DIR/edge"
 section "Edge: Caddy, PowerDNS, sync"
-[ -n "$EDGE_IP" ] || fail "edge.ip is empty"
+EDGE_IP="${EDGE_IP:-$TARGET_EDGE_HOST}"   # the edge server's own address, unless edge.ip says otherwise
+[ -n "$EDGE_IP" ] || fail "edge.ip is empty and the edge host is not set"
 umask 077
 cat > .env <<ENV
 ROOT_DOMAIN=$ROOT_DOMAIN

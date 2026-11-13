@@ -19,6 +19,6 @@ if [ "$TARGET" = origin ]; then
   info "other compose projects here stay untouched: $(docker compose ls -q 2>/dev/null | grep -v '^ofhuntsville$' | tr '\n' ' ')"
 else
   for p in 80 443; do busy $p && ! docker ps --format '{{.Names}}' | grep -q '^ofhuntsville-edge-' && warn "port $p is taken" || success "port $p ok"; done
-  [ -n "$EDGE_IP" ] || warn "edge.ip is empty — set it to this server's public IP"
+  [ -n "${EDGE_IP:-$TARGET_EDGE_HOST}" ] || warn "edge.ip is empty"
 fi
 exit 0

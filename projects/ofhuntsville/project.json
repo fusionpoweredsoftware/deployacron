@@ -103,7 +103,7 @@
       "side": "remote",
       "target": "edge",
       "always": true,
-      "run": "curl -fsS --max-time 5 \"http://{{targets.origin.host}}:{{origin.port}}/healthz\" && echo ' origin reachable from edge' || echo 'origin NOT reachable from edge'; dig +short @{{edge.ip}} test.{{root.domain}} 2>/dev/null || true"
+      "run": "curl -fsS --max-time 5 \"http://{{targets.origin.host}}:{{origin.port}}/healthz\" && echo ' origin reachable from edge' || echo 'origin NOT reachable from edge'; dig +short @{{targets.edge.host}} test.{{root.domain}} 2>/dev/null || true"
     },
     {
       "id": "report",
