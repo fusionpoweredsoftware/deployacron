@@ -6,6 +6,10 @@ Run {{run.id}}. Origin: `{{targets.origin.host}}`. Edge: `{{targets.edge.host}}`
 
 - [ ] At the current DNS host for {{root.domain}}, add `*.{{root.domain}}  A  {{edge.ip}}`. Keep the apex and www on Netlify.
 
+## Your manager
+
+- [ ] https://manage.{{root.domain}}/<manage.path>/ — keep that link private.
+
 ## 2. The origin port
 
 - [ ] Port {{origin.port}} on the origin must be reachable from the edge. Best: allow only {{edge.ip}} in the origin's firewall.

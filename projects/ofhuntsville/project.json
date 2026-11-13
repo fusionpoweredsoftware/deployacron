@@ -1,7 +1,10 @@
 {
   "title": "ofHuntsville",
   "description": "Site manager on the origin (Docker, port 8090, beside other apps), Caddy + PowerDNS + fallback copy on the edge.",
-  "targets": ["origin", "edge"],
+  "targets": [
+    "origin",
+    "edge"
+  ],
   "variables": {
     "root.domain": "ofhuntsville.org",
     "acme.email": "",
@@ -11,11 +14,18 @@
     "www.cname": "ofhuntsville.netlify.app",
     "admin.user": "admin",
     "admin.password": "",
+    "manage.path": "",
     "edge.token": "",
     "pdns.apiKey": "",
     "git.token": ""
   },
-  "secrets": ["admin.password", "edge.token", "pdns.apiKey", "git.token"],
+  "secrets": [
+    "admin.password",
+    "manage.path",
+    "edge.token",
+    "pdns.apiKey",
+    "git.token"
+  ],
   "env": {
     "ROOT_DOMAIN": "{{root.domain}}",
     "DNSAPI_HOST": "dnsapi.{{root.domain}}",
@@ -29,21 +39,89 @@
     "ADMIN_PASSWORD": "{{admin.password}}",
     "EDGE_TOKEN": "{{edge.token}}",
     "PDNS_API_KEY": "{{pdns.apiKey}}",
-    "PDNS_AUTH_API_KEY": "{{pdns.apiKey}}"
+    "PDNS_AUTH_API_KEY": "{{pdns.apiKey}}",
+    "MANAGE_PATH": "{{manage.path}}"
   },
-  "push": { "excludes": "rsync-excludes.txt", "delete": true },
-  "templates": ["NOT-DONE.md"],
-  "steps": [
-    { "id": "origin-preflight", "title": "Origin preflight", "kind": "preflight", "side": "remote", "target": "origin", "run": "preflight.sh" },
-    { "id": "origin-fetch", "title": "Origin: fetch code", "kind": "fetch", "side": "remote", "target": "origin" },
-    { "id": "origin-up", "title": "Origin: build & start", "kind": "script", "side": "remote", "target": "origin", "run": "origin-up.sh" },
-    { "id": "edge-preflight", "title": "Edge preflight", "kind": "preflight", "side": "remote", "target": "edge", "run": "preflight.sh" },
-    { "id": "edge-fetch", "title": "Edge: fetch code", "kind": "fetch", "side": "remote", "target": "edge" },
-    { "id": "edge-up", "title": "Edge: start Caddy, DNS, sync", "kind": "script", "side": "remote", "target": "edge", "run": "edge-up.sh" },
-    { "id": "verify", "title": "Verify through the edge", "kind": "command", "side": "remote", "target": "edge", "always": true,
-      "run": "curl -fsS --max-time 5 \"http://{{targets.origin.host}}:{{origin.port}}/healthz\" && echo ' origin reachable from edge' || echo 'origin NOT reachable from edge'; dig +short @{{edge.ip}} test.{{root.domain}} 2>/dev/null || true" },
-    { "id": "report", "title": "What is not done", "kind": "report", "side": "local", "always": true }
+  "push": {
+    "excludes": "rsync-excludes.txt",
+    "delete": true
+  },
+  "templates": [
+    "NOT-DONE.md"
   ],
-  "troubleshoot": { "command": "ollama launch claude", "tmuxSession": "" },
-  "git": { "url": "git@github.com:fusionpoweredsoftware/ofhuntsville.git", "branch": "main", "keyPath": "", "depth": 0, "submodules": false }
+  "steps": [
+    {
+      "id": "origin-preflight",
+      "title": "Origin preflight",
+      "kind": "preflight",
+      "side": "remote",
+      "target": "origin",
+      "run": "preflight.sh"
+    },
+    {
+      "id": "origin-fetch",
+      "title": "Origin: fetch code",
+      "kind": "fetch",
+      "side": "remote",
+      "target": "origin"
+    },
+    {
+      "id": "origin-up",
+      "title": "Origin: build & start",
+      "kind": "script",
+      "side": "remote",
+      "target": "origin",
+      "run": "origin-up.sh"
+    },
+    {
+      "id": "edge-preflight",
+      "title": "Edge preflight",
+      "kind": "preflight",
+      "side": "remote",
+      "target": "edge",
+      "run": "preflight.sh"
+    },
+    {
+      "id": "edge-fetch",
+      "title": "Edge: fetch code",
+      "kind": "fetch",
+      "side": "remote",
+      "target": "edge"
+    },
+    {
+      "id": "edge-up",
+      "title": "Edge: start Caddy, DNS, sync",
+      "kind": "script",
+      "side": "remote",
+      "target": "edge",
+      "run": "edge-up.sh"
+    },
+    {
+      "id": "verify",
+      "title": "Verify through the edge",
+      "kind": "command",
+      "side": "remote",
+      "target": "edge",
+      "always": true,
+      "run": "curl -fsS --max-time 5 \"http://{{targets.origin.host}}:{{origin.port}}/healthz\" && echo ' origin reachable from edge' || echo 'origin NOT reachable from edge'; dig +short @{{edge.ip}} test.{{root.domain}} 2>/dev/null || true"
+    },
+    {
+      "id": "report",
+      "title": "What is not done",
+      "kind": "report",
+      "side": "local",
+      "always": true
+    }
+  ],
+  "troubleshoot": {
+    "command": "ollama launch claude",
+    "tmuxSession": ""
+  },
+  "git": {
+    "url": "git@github.com:fusionpoweredsoftware/ofhuntsville.git",
+    "branch": "main",
+    "keyPath": "",
+    "depth": 0,
+    "submodules": false
+  }
 }
