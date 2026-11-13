@@ -3,11 +3,12 @@
 # Installs only what is missing (Docker + compose, git, curl, tmux). Touches nothing else.
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
+echo "checking $(hostname): git curl tmux docker"
 need=()
 for c in git curl tmux; do command -v $c >/dev/null || need+=($c); done
 if [ ${#need[@]} -gt 0 ]; then
-  if command -v apt-get >/dev/null; then apt-get update -qq && apt-get install -y -qq "${need[@]}"
-  elif command -v dnf >/dev/null; then dnf install -y -q "${need[@]}"
+  if command -v apt-get >/dev/null; then echo "installing: ${need[*]}"; apt-get update && apt-get install -y "${need[@]}"
+  elif command -v dnf >/dev/null; then dnf install -y "${need[@]}"
   else echo "install by hand: ${need[*]}"; exit 1; fi
 fi
 if ! command -v docker >/dev/null; then
