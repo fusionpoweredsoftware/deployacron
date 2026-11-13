@@ -17,6 +17,6 @@ PDNS_AUTH_API_KEY=$PDNS_AUTH_API_KEY
 APEX_IP=$APEX_IP
 WWW_CNAME=$WWW_CNAME
 ENV
-docker compose up -d 2>&1 | tail -n 5
+docker compose up -d --force-recreate 2>&1 | tail -n 5   # recreate: the Caddyfile is a single-file mount, which keeps the old file after a git update
 sleep 4
 ./zone.sh && success "zone $ROOT_DOMAIN set" || warn "zone step failed — run edge/zone.sh by hand"
