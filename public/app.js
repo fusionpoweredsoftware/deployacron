@@ -29,7 +29,7 @@ function toast(msg, err) {
 const fmtT = (iso) => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 const dur = (a, b) => { if (!a) return ''; const s = Math.max(0, ((b ? new Date(b) : Date.now()) - new Date(a)) / 1000); return s < 60 ? `${s.toFixed(s < 10 ? 1 : 0)}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`; };
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const P = () => state.app.activeProject;
+const P = () => state.app.activeProject || state.project?.name || '';
 const utf8 = (s) => Array.from(new TextEncoder().encode(s), (b) => String.fromCharCode(b)).join('');
 const multi = () => (state.project?.targets?.length || 0) > 1;
 const targetText = () => { const s = state.project?.local?.server; const who = s?.host ? `${s.user}@${s.host}` : 'the server'; return multi() ? `${state.project.target}: ${who}` : who; };

@@ -51,7 +51,12 @@ const targetOf = (req) => req.query.target || req.body?.target;
 const describe = (p) => ({ project: redact(p), problems: validate(p), sourceDir: sourceDir(p), remoteDir: remoteDir(p), files: listFiles(p), running: current.get(p.name)?.id || null, targets: p.targets, target: p.target });
 
 // ── app + projects ──────────────────────────────────────────────────────────
-app.get('/api/app', (req, res) => { const a = loadApp(); res.json({ ...a, projects: listProjects(), running: [...current.keys()] }); });
+app.get('/api/app', (req, res) => {
+  const a = loadApp(), projects = listProjects();
+  // The page filters live events by this name, so it must be the project actually shown, never ''.
+  if (!projects.some((x) => x.name === a.activeProject) && projects[0]) a.activeProject = projects[0].name;
+  res.json({ ...a, projects, running: [...current.keys()] });
+});
 app.put('/api/app', (req, res) => { const { activeProject, port, keepRuns } = req.body || {}; res.json(saveApp({ activeProject, port: Number(port) || undefined, keepRuns: Number(keepRuns) || undefined })); });
 app.post('/api/projects', (req, res) => {
   try { const p = createProject(String(req.body?.name || '').trim().toLowerCase(), req.body?.from || '_template'); saveApp({ activeProject: p.name }); res.json(describe(p)); }
