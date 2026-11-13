@@ -430,7 +430,20 @@ async function showDeploy(runId) {
   })();
   drawSteps();
   store.listeners.add((what) => { if (what === 'local' || what === 'remote') feeds.find((f) => f.pane === what)?.render(); else drawSteps(); });
-  state.tick = setInterval(() => { const e = $('#elapsed'); if (e && store.meta?.status === 'running') e.textContent = dur(store.meta.startedAt); }, 1000);
+  let polling = false;
+  state.tick = setInterval(async () => {
+    const e = $('#elapsed'); if (e && store.meta?.status === 'running') e.textContent = dur(store.meta.startedAt);
+    // Without the live socket nothing arrives on its own: re-read the run from disk.
+    if (store.meta?.status === 'running' && state.ws?.readyState !== 1 && !polling) {
+      polling = true;
+      try {
+        Object.assign(store, { lines: { local: [], remote: [] }, partial: { local: '', remote: '' }, loaded: false });
+        await loadRun(id);
+        if (store.meta.status !== 'running') { state.current = null; onRunChange(); }
+        for (const fn of store.listeners) { fn('local'); fn('remote'); fn('done'); }
+      } catch {} finally { polling = false; }
+    }
+  }, 2000);
 }
 async function startDeploy() {
   try { const r = await api('/api/deploy', { method: 'POST' }); toast(`Run ${r.id} started`); location.hash = '#deploy'; if (route().name === 'deploy') showDeploy(); }
