@@ -372,7 +372,7 @@ async function showDeploy(runId) {
   dock('deploy', {
     title: runId ? 'Run' : 'Deploy',
     actions: `<button class="btn sm danger abort-btn" id="abort" hidden>Abort</button>
-      <button class="btn sm primary deploy-btn" id="deploy" ${state.current || problems.length ? 'disabled' : ''}>▲ Deploy now</button>`,
+      ${fastToggle()}<button class="btn sm primary deploy-btn" id="deploy" ${state.current || problems.length ? 'disabled' : ''}>▲ Deploy now</button>`,
     body: `<div class="dock-line" id="runmeta"><span class="faint">no run yet</span></div>
       <div class="dock-line">
         <a class="ts-status" id="ts-status" href="#troubleshoot" title="the troubleshooters run before anything else">troubleshooters <span data-s="local">…</span> <span data-s="remote">…</span></a>
@@ -386,7 +386,7 @@ async function showDeploy(runId) {
   });
   onRunChange();
   for (const side of ['local', 'remote']) api(`/api/troubleshoot/${side}/status`).then((r) => { const el = $(`#ts-status [data-s=${side}]`); if (!el) return; el.textContent = `${side} ${r.running ? '●' : '○'}`; el.className = r.running ? 'on' : 'off'; }).catch(() => {});
-  $('#deploy').onclick = startDeploy;
+  $('#deploy').onclick = startDeploy; wireFast();
   $('#abort').onclick = () => api('/api/deploy/abort', { method: 'POST' }).catch((e) => toast(e.message, true));
   if (!id) {
     $('#feeds').innerHTML = `<div class="card empty"><b>No runs for ${esc(state.project.title || P())} yet</b>Press <b>Deploy now</b> to push ${esc(state.sourceDir)} to ${esc(targetText())}.</div>`;
@@ -456,9 +456,25 @@ async function showDeploy(runId) {
     }
   }, 2000);
 }
+// Fast mode is a switch next to Deploy, but it never acts silently: when it's on, every Deploy asks first.
+const fastOn = () => { try { return localStorage.getItem('deployacron.fast') === '1'; } catch { return false; } };
+function fastToggle() { return `<label class="fast-tg" title="Fast deploy skips the checks. You'll be asked every time."><input type="checkbox" class="fast-cb" ${fastOn() ? 'checked' : ''}> Fast</label>`; }
+function wireFast() { document.querySelectorAll('.fast-cb').forEach((c) => (c.onchange = () => { try { localStorage.setItem('deployacron.fast', c.checked ? '1' : '0'); } catch {} document.querySelectorAll('.fast-cb').forEach((o) => (o.checked = c.checked)); })); }
+async function askFast() {
+  let skips = []; try { skips = (await api('/api/deploy/fast-skips')).skipped; } catch {}
+  return new Promise((done) => {
+    const d = document.createElement('div'); d.className = 'ask';
+    d.innerHTML = `<b>Fast deploy is on</b><div>Skip the checks this time${skips.length ? ` (${skips.map(esc).join(', ')})` : ''}?</div>
+      <div class="row"><button class="btn sm primary" data-v="fast">⚡ Fast</button><button class="btn sm" data-v="full">Full deploy</button><button class="btn sm" data-v="">Cancel</button></div>`;
+    d.onclick = (e) => { const v = e.target.closest('[data-v]')?.dataset.v; if (v === undefined) return; d.remove(); done(v); };
+    document.body.appendChild(d);
+  });
+}
 async function startDeploy() {
   try {
-    await state.flushSettings?.(); const r = await api('/api/deploy', { method: 'POST' }); toast(`Run ${r.id} started`); location.hash = '#deploy'; if (route().name === 'deploy') showDeploy(); }
+    let fast = false;
+    if (fastOn()) { const v = await askFast(); if (!v) return; fast = v === 'fast'; }
+    await state.flushSettings?.(); const r = await api('/api/deploy', { method: 'POST', body: { fast } }); toast(`Run ${r.id} started${fast ? ' (fast)' : ''}`); location.hash = '#deploy'; if (route().name === 'deploy') showDeploy(); }
   catch (e) { toast(e.body?.problems ? e.body.problems.join(' · ') : e.message, true); }
 }
 function md(src) {
@@ -489,9 +505,9 @@ async function showRuns(page) {
   dock('runs', {
     title: 'Runs',
     meta: `${esc(state.project.title || P())} · ${l.total} run${l.total === 1 ? '' : 's'}`,
-    actions: `<button class="btn sm primary deploy-btn" ${state.current || state.problems.length ? 'disabled' : ''}>▲ Deploy now</button>`,
+    actions: `${fastToggle()}<button class="btn sm primary deploy-btn" ${state.current || state.problems.length ? 'disabled' : ''}>▲ Deploy now</button>`,
   });
-  $('.deploy-btn').onclick = startDeploy;
+  $('.deploy-btn').onclick = startDeploy; wireFast();
   view.querySelectorAll('tr[data-id]').forEach((tr) => { tr.onclick = () => (location.hash = `#run/${tr.dataset.id}`); });
 }
 

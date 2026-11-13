@@ -144,13 +144,20 @@ function startRun(p, steps, kind) {
   run.go(steps, { project: p }).catch((e) => { console.error(e); current.delete(p.name); });
   return run;
 }
+const FAST_SKIP = /preflight|verify|report|check|test/i;
 app.post('/api/deploy', (req, res) => {
   let p; try { p = proj(req); } catch (e) { return fail(res, e); }
   if (current.has(p.name)) return res.status(409).json({ error: `run ${current.get(p.name).id} is still going`, id: current.get(p.name).id });
   const problems = validate(p);
   if (problems.length) return res.status(400).json({ error: 'the project is not ready', problems });
-  const run = startRun(p, buildSteps(p), 'deploy');
-  res.json({ id: run.id, project: p.name });
+  // Fast: only what changes the servers. Checks (preflight, verify, report, tests) are skipped.
+  const fast = !!req.body?.fast;
+  const pp = fast ? { ...p, steps: (p.steps || []).filter((x) => !FAST_SKIP.test(`${x.id || ''} ${x.kind || ''}`)) } : p;
+  const run = startRun(pp, buildSteps(pp), fast ? 'deploy-fast' : 'deploy');
+  res.json({ id: run.id, project: p.name, fast, skipped: fast ? (p.steps || []).filter((x) => FAST_SKIP.test(`${x.id || ''} ${x.kind || ''}`)).map((x) => x.id) : [] });
+});
+app.get('/api/deploy/fast-skips', (req, res) => {
+  try { const p = proj(req); res.json({ skipped: (p.steps || []).filter((x) => FAST_SKIP.test(`${x.id || ''} ${x.kind || ''}`)).map((x) => x.title || x.id) }); } catch (e) { fail(res, e); }
 });
 /** The project's remote/prereqs.sh, once, on the selected target: what a server needs before its first deploy. */
 app.post('/api/project/prereqs', (req, res) => {

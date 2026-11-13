@@ -321,3 +321,4 @@ body:has(.card.maxed) .runbar .spacer ~ .btn:not(.max) { opacity: .4; }
 .pill.waiting { color: var(--amber); }
 .problems-line { color: var(--amber); font-size: 12.5px; gap: 8px; }
 .problems-line .no { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fast-tg{display:inline-flex;gap:4px;align-items:center;font-size:12px;margin-right:8px;cursor:pointer}
