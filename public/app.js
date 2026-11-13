@@ -710,9 +710,13 @@ const SETTINGS = {
         ${F('local.server.remoteDir', 'Directory on the server', s.remoteDir, { ph: `/home/me/${P()}` })}
         <div class="field"><label>Mode</label><select name="local.simulate"><option value="false" ${!p.local.simulate ? 'selected' : ''}>ssh — deploy to the server</option><option value="true" ${p.local.simulate ? 'selected' : ''}>simulate — every step runs on this machine</option></select></div>
       </div></section>
-      <section class="card settings-card"><header><h2>Connection test</h2><span class="muted" id="test-out" style="font-size:12.5px">not run yet</span><button type="button" class="btn sm" id="test-ssh" style="margin-left:auto">Test</button></header><div class="body" id="test-detail">
+      <section class="card settings-card"><header><h2>Connection test</h2><span class="muted" id="test-out" style="font-size:12.5px">not run yet</span>${state.files.includes('remote/prereqs.sh') ? `<button type="button" class="btn sm" id="prereqs" style="margin-left:auto" title="runs remote/prereqs.sh on ${esc(state.target || '')}: what this server needs before its first deploy">Install prerequisites</button>` : ''}<button type="button" class="btn sm" id="test-ssh" ${state.files.includes('remote/prereqs.sh') ? '' : 'style="margin-left:auto"'}>Test</button></header><div class="body" id="test-detail">
         <div class="faint" style="font-size:13px">Saves what is on screen, opens a real ssh session, and reports who you are on the server, whether the directory is a checkout yet, which tools are installed, and whether the server itself can reach the repository.</div>
       </div></section></div>`;
+    if ($('#prereqs')) $('#prereqs').onclick = async () => {
+      try { await api('/api/project', { method: 'PUT', body: formValues(pane) }); const r = await api('/api/project/prereqs', { method: 'POST' }); toast(`Run ${r.id} started`); location.hash = '#deploy'; }
+      catch (e) { toast(e.message, true); }
+    };
     $('#test-ssh').onclick = async () => {
       const out = $('#test-out'), detail = $('#test-detail');
       out.textContent = 'connecting…'; out.style.color = ''; detail.innerHTML = '';

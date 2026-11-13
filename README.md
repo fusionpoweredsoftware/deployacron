@@ -57,7 +57,10 @@ own on this machine may too.
    pauses with its public key and a link to the repository's deploy keys.
    Add it, press **Continue**, and the fetch tries again. Later deploys use
    that key without asking. A key path you set is always used as is.
-3. Press **Deploy now**.
+3. If the project has `remote/prereqs.sh`, the connection test card shows
+   **Install prerequisites**: it runs that script once on the selected
+   target, for what a fresh server needs before its first deploy.
+4. Press **Deploy now**.
 
 ## Troubleshooters first
 

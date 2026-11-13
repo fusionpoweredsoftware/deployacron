@@ -118,13 +118,9 @@ app.get('/api/runs/:id/:pane.log', (req, res) => {
   try { const t = readFile(proj(req).name, req.params.id, `${req.params.pane}.log`); if (t == null) return res.status(404).end(); res.type('text/plain').send(t); } catch (e) { fail(res, e); }
 });
 
-app.post('/api/deploy', (req, res) => {
-  let p; try { p = proj(req); } catch (e) { return fail(res, e); }
-  if (current.has(p.name)) return res.status(409).json({ error: `run ${current.get(p.name).id} is still going`, id: current.get(p.name).id });
-  const problems = validate(p);
-  if (problems.length) return res.status(400).json({ error: 'the project is not ready', problems });
-  const steps = buildSteps(p);
-  const run = new Run({ kind: 'deploy', project: p.name, config: redact(p), steps });
+/** Start a run of `steps` for project p; the caller has checked nothing is running. */
+function startRun(p, steps, kind) {
+  const run = new Run({ kind, project: p.name, config: redact(p), steps });
   current.set(p.name, run);
   run.on('log', (ev) => broadcast({ type: 'log', project: p.name, run: run.id, ...ev }));
   run.on('step', (ev) => broadcast({ type: 'step', project: p.name, ...ev }));
@@ -140,6 +136,23 @@ app.post('/api/deploy', (req, res) => {
   });
   broadcast({ type: 'started', project: p.name, run: run.id, meta: run.meta });
   run.go(steps, { project: p }).catch((e) => { console.error(e); current.delete(p.name); });
+  return run;
+}
+app.post('/api/deploy', (req, res) => {
+  let p; try { p = proj(req); } catch (e) { return fail(res, e); }
+  if (current.has(p.name)) return res.status(409).json({ error: `run ${current.get(p.name).id} is still going`, id: current.get(p.name).id });
+  const problems = validate(p);
+  if (problems.length) return res.status(400).json({ error: 'the project is not ready', problems });
+  const run = startRun(p, buildSteps(p), 'deploy');
+  res.json({ id: run.id, project: p.name });
+});
+/** The project's remote/prereqs.sh, once, on the selected target: what a server needs before its first deploy. */
+app.post('/api/project/prereqs', (req, res) => {
+  let p; try { p = proj(req); } catch (e) { return fail(res, e); }
+  if (current.has(p.name)) return res.status(409).json({ error: `run ${current.get(p.name).id} is still going` });
+  if (!listFiles(p).includes('remote/prereqs.sh')) return res.status(404).json({ error: 'this project has no remote/prereqs.sh' });
+  const steps = buildSteps({ ...p, steps: [{ id: 'prereqs', title: `Prerequisites on ${p.target}`, kind: 'script', side: 'remote', target: p.target, run: 'prereqs.sh' }] }).slice(1);
+  const run = startRun(p, steps, 'prereqs');
   res.json({ id: run.id, project: p.name });
 });
 app.post('/api/deploy/answer', (req, res) => {
