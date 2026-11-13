@@ -26,7 +26,8 @@ const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use('/vendor/xterm', express.static(path.join(ROOT, 'node_modules/@xterm/xterm')));
 app.use('/vendor/addon-fit', express.static(path.join(ROOT, 'node_modules/@xterm/addon-fit')));
-app.use(express.static(path.join(ROOT, 'public')));
+// No caching: after an update the browser must get the new page code, not run yesterday's.
+app.use(express.static(path.join(ROOT, 'public'), { etag: false, lastModified: false, setHeaders: (res) => res.set('cache-control', 'no-store') }));
 
 const current = new Map();    // project → running Run
 const sockets = new Set();
