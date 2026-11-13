@@ -365,7 +365,7 @@ async function showDeploy(runId) {
         <a class="dock-target" href="#settings/server">${esc(targetText())}<span class="faint">:${esc(state.remoteDir || '')}</span></a>
         <a class="dock-target" href="#settings/project">${state.project.git.url ? `${esc(state.project.git.url.replace(/^.*[/:]/, '').replace(/\.git$/, ''))}<span class="faint">#${esc(state.project.git.branch)}</span>` : '<span class="faint">no repository</span>'}</a>
       </div>
-      ${problems.length ? `<div class="problems">${problems.map((x) => `<div>${esc(x)}</div>`).join('')}<a href="#settings/server" style="text-decoration:underline">Open Settings</a></div>` : ''}`,
+      ${problems.length ? `<div class="dock-line problems-line" title="${esc(problems.join('\n'))}"><span class="no">✕ ${problems.length === 1 ? esc(problems[0]) : `${problems.length} things to fix before deploying`}</span><a href="#settings/server" style="text-decoration:underline;margin-left:auto">Fix in Settings</a></div>` : ''}`,
   });
   onRunChange();
   for (const side of ['local', 'remote']) api(`/api/troubleshoot/${side}/status`).then((r) => { const el = $(`#ts-status [data-s=${side}]`); if (!el) return; el.textContent = `${side} ${r.running ? '●' : '○'}`; el.className = r.running ? 'on' : 'off'; }).catch(() => {});
