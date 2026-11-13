@@ -348,7 +348,7 @@ async function render() {
   if (r.name === 'settings') return showSettings(r.arg);
   location.hash = '#deploy';
 }
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', async () => { const f = state.flushSettings; state.flushSettings = null; try { await f?.(); } catch {} render(); });
 
 // ── Deploy / Run ───────────────────────────────────────────────────────────
 async function showDeploy(runId) {
@@ -457,7 +457,8 @@ async function showDeploy(runId) {
   }, 2000);
 }
 async function startDeploy() {
-  try { const r = await api('/api/deploy', { method: 'POST' }); toast(`Run ${r.id} started`); location.hash = '#deploy'; if (route().name === 'deploy') showDeploy(); }
+  try {
+    await state.flushSettings?.(); const r = await api('/api/deploy', { method: 'POST' }); toast(`Run ${r.id} started`); location.hash = '#deploy'; if (route().name === 'deploy') showDeploy(); }
   catch (e) { toast(e.body?.problems ? e.body.problems.join(' · ') : e.message, true); }
 }
 function md(src) {
@@ -718,8 +719,14 @@ async function showSettings(tab) {
   view.querySelectorAll('.subtabs button').forEach((b) => (b.onclick = () => (location.hash = `#settings/${b.dataset.t}`)));
   const pane = $('#pane');
   const save = SETTINGS[tab](pane, p);
-  $('#save').onclick = async () => {
-    try { const body = save(); const r = await api('/api/project', { method: 'PUT', body }); state.project = r.project; state.problems = r.problems; state.files = r.files; state.sourceDir = r.sourceDir; state.remoteDir = r.remoteDir; state.target = r.target; $('#target').textContent = targetText(); state.app.projects = (await api('/api/app')).projects; drawProjects(); drawTargets(); toast('Saved'); showSettings(tab); }
+  // Autosave: every edit is saved a moment after it is made, and before any deploy
+  // or page change, so nothing typed here is ever silently lost.
+  let timer = null, dirty = false;
+  const flush = async () => { clearTimeout(timer); if (!dirty) return; dirty = false; $('#save').textContent = 'Saving…'; await $('#save').onclick(true); };
+  pane.addEventListener('input', () => { dirty = true; $('#save').textContent = 'Save'; clearTimeout(timer); timer = setTimeout(flush, 800); });
+  state.flushSettings = flush;
+  $('#save').onclick = async (quiet) => {
+    try { const body = save(); const r = await api('/api/project', { method: 'PUT', body }); state.project = r.project; state.problems = r.problems; state.files = r.files; state.sourceDir = r.sourceDir; state.remoteDir = r.remoteDir; state.target = r.target; $('#target').textContent = targetText(); state.app.projects = (await api('/api/app')).projects; drawProjects(); drawTargets(); if (quiet === true) { const b = $('#save'); if (b) b.textContent = 'Saved ✓'; } else { toast('Saved'); showSettings(tab); } }
     catch (e) { toast(e.message, true); }
   };
 }
