@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Run once on a server before its first deploy, from your machine:
-#   ssh root@SERVER 'bash -s' < projects/ofhuntsville/prereqs.sh
+# Run once per server before its first deploy: Settings → Server → Install prerequisites.
 # Installs only what is missing (Docker + compose, git, curl, tmux). Touches nothing else.
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
