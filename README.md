@@ -51,6 +51,12 @@ own on this machine may too.
    deploy key. An https remote can use a token instead: set `git.token` under
    Variables, where it is a secret and reaches git through askpass rather than
    a URL or a file.
+
+   Or leave the key path empty. If the server cannot read an ssh remote, the
+   fetch step makes `~/.ssh/deploy-<project>` on that server and the run
+   pauses with its public key and a link to the repository's deploy keys.
+   Add it, press **Continue**, and the fetch tries again. Later deploys use
+   that key without asking. A key path you set is always used as is.
 3. Press **Deploy now**.
 
 ## Troubleshooters first

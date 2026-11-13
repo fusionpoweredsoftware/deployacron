@@ -142,6 +142,10 @@ app.post('/api/deploy', (req, res) => {
   run.go(steps, { project: p }).catch((e) => { console.error(e); current.delete(p.name); });
   res.json({ id: run.id, project: p.name });
 });
+app.post('/api/deploy/answer', (req, res) => {
+  try { const p = proj(req); const r = current.get(p.name); if (!r || !r.answer(req.body?.ok)) return res.status(404).json({ error: 'nothing is waiting' }); res.json({ ok: true, id: r.id }); }
+  catch (e) { fail(res, e); }
+});
 app.post('/api/deploy/abort', (req, res) => {
   try { const p = proj(req); const r = current.get(p.name); if (!r) return res.status(404).json({ error: 'nothing running' }); r.abort(); res.json({ ok: true, id: r.id }); }
   catch (e) { fail(res, e); }

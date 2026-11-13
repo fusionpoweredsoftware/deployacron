@@ -389,11 +389,30 @@ async function showDeploy(runId) {
   const drawSteps = () => {
     const m = store.meta; if (!m) return;
     $('#steps').innerHTML = `<li class="all ${selected ? '' : 'selected'}" data-step=""><span class="n">∗</span><span class="t">All steps</span><span class="d"></span></li>` +
-      m.steps.map((s, i) => `<li class="${s.status} ${selected === s.id ? 'selected' : ''}" data-step="${esc(s.id)}"><span class="n">${s.status === 'ok' ? '✓' : s.status === 'failed' ? '✕' : s.status === 'warn' ? '!' : i + 1}</span><span class="t">${esc(s.title)}<small>${esc(s.side === 'remote' && s.target && s.target !== 'server' ? s.target : s.side)}</small></span><span class="d">${s.startedAt ? dur(s.startedAt, s.finishedAt) : ''}</span></li>`).join('');
+      m.steps.map((s, i) => `<li class="${s.status} ${selected === s.id ? 'selected' : ''}" data-step="${esc(s.id)}"><span class="n">${s.status === 'ok' ? '✓' : s.status === 'failed' ? '✕' : s.status === 'warn' ? '!' : s.status === 'waiting' ? '?' : i + 1}</span><span class="t">${esc(s.title)}<small>${esc(s.side === 'remote' && s.target && s.target !== 'server' ? s.target : s.side)}</small></span><span class="d">${s.startedAt ? dur(s.startedAt, s.finishedAt) : ''}</span></li>`).join('');
     $('#steps').querySelectorAll('li').forEach((li) => { li.onclick = () => { selected = li.dataset.step || null; for (const f of feeds) { f.filter = selected; f.live = true; f.render(); } drawSteps(); }; });
     $('#runmeta').innerHTML = `<span class="pill ${m.status}">${m.status}</span><span class="mono">${esc(m.id)}</span><span>${fmtT(m.startedAt)}</span><span class="mono" id="elapsed">${dur(m.startedAt, m.finishedAt)}</span>`;
     $('#toggle-nd').hidden = !(m.notDone && m.status !== 'running');
     if (m.notDone) notDonePanel.set(m.notDone);
+    drawAsk(m.steps.find((s) => s.status === 'waiting' && s.ask));
+  };
+  const drawAsk = (s) => {
+    // Fixed over the page, not in the dock: a waiting run is the one thing to look at.
+    let box = $('#ask');
+    if (!box) { box = document.createElement('div'); box.id = 'ask'; box.className = 'ask'; box.hidden = true; document.body.appendChild(box); }
+    box.hidden = !s; if (!s) { box.innerHTML = ''; box.dataset.step = ''; return; }
+    if (box.dataset.step === s.id) return;
+    box.dataset.step = s.id;
+    const a = s.ask;
+    box.innerHTML = `<b>${esc(a.title)}</b><div>${esc(a.text)}</div>
+      <textarea class="mono" readonly rows="3">${esc(a.key)}</textarea>
+      <div class="faint mono">${esc(a.keyPath)}</div>
+      <div class="row"><button class="btn sm" data-a="copy">Copy key</button>${a.link ? `<a class="btn sm" href="${esc(a.link)}" target="_blank" rel="noopener">Open deploy keys ↗</a>` : ''}
+      <span style="flex:1"></span><button class="btn sm" data-a="no">Cancel</button><button class="btn sm primary" data-a="yes">Continue</button></div>`;
+    $('[data-a=copy]', box).onclick = () => { navigator.clipboard?.writeText(a.key).then(() => toast('Key copied'), () => { $('textarea', box).select(); }); };
+    const answer = (ok) => api('/api/deploy/answer', { method: 'POST', body: { ok } }).catch((e) => toast(e.message, true));
+    $('[data-a=yes]', box).onclick = () => answer(true);
+    $('[data-a=no]', box).onclick = () => answer(false);
   };
   const notDonePanel = (() => {
     const nd = $('#notdone'); let sections = [], page = 1, shown = false;
